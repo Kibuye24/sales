@@ -4,8 +4,7 @@ import {
   buildSearchPrompt,
 } from "./gemini-prompt";
 
-// Lazy-initialize the Groq client to avoid module-level crashes
-// when the API key isn't set yet
+// Lazy-initialize the Groq client
 let _groq: Groq | null = null;
 
 function getGroqClient(): Groq {
@@ -13,7 +12,7 @@ function getGroqClient(): Groq {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       throw new Error(
-        "GROQ_API_KEY is not configured. Add it to .env.local in the glovo-sales-agent directory."
+        "GROQ_API_KEY is not configured. Add it to .env.local"
       );
     }
     _groq = new Groq({ apiKey });
@@ -33,12 +32,17 @@ export interface AgentSearchResult {
     category_searched: string;
     total_found: number;
     search_notes: string;
+    data_quality_note?: string;
   };
 }
 
 /**
- * Runs the Groq lead-generation agent for a given area + category.
- * Uses llama-3.3-70b-versatile for fast, high-quality structured output.
+ * Runs the lead-generation agent using Groq (Llama 3.3 70B).
+ *
+ * The prompt is designed to maximize accuracy by:
+ * - Only asking for business names the model is confident about
+ * - Requiring null for unverified contact details
+ * - Adding confidence levels and verification flags
  */
 export async function runLeadAgent(
   params: AgentSearchParams
@@ -52,8 +56,8 @@ export async function runLeadAgent(
       { role: "system", content: LEAD_GENERATION_SYSTEM_PROMPT },
       { role: "user", content: userPrompt },
     ],
-    temperature: 0.4,
-    top_p: 0.9,
+    temperature: 0.3, // Low temp = more factual, less creative
+    top_p: 0.85,
     max_tokens: 8192,
     response_format: { type: "json_object" },
   });
@@ -61,11 +65,10 @@ export async function runLeadAgent(
   const text = response.choices[0]?.message?.content ?? "";
 
   // Parse JSON from response
-  let parsed: AgentSearchResult;
+  let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(text);
   } catch {
-    // Try extracting JSON from markdown code block
     const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) {
       parsed = JSON.parse(jsonMatch[1].trim());
@@ -74,5 +77,19 @@ export async function runLeadAgent(
     }
   }
 
-  return parsed;
+  const leads = (parsed.leads || []) as Record<string, unknown>[];
+  const metadata = (parsed.metadata || {}) as Record<string, unknown>;
+
+  return {
+    leads,
+    metadata: {
+      area_searched: params.area,
+      category_searched: params.category,
+      total_found: leads.length,
+      search_notes: (metadata.search_notes as string) || "AI-generated lead list",
+      data_quality_note:
+        (metadata.data_quality_note as string) ||
+        "Business names are high-confidence. Contact details should be verified via Google Maps or direct visits.",
+    },
+  };
 }

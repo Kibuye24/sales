@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ChatWidget from "./components/ChatWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -100,9 +101,12 @@ export default function RootLayout({
             <span style={{ color: "var(--color-primary)" }}>
               Nexus Data &amp; Design
             </span>{" "}
-            · Powered by Gemini AI
+            · Powered by Groq AI
           </p>
         </footer>
+
+        {/* Floating Chat Widget */}
+        <ChatWidget />
       </body>
     </html>
   );

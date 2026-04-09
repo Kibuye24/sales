@@ -6,153 +6,64 @@ interface AreaBreakdownProps {
   isLoading: boolean;
 }
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  restaurant: "🍽️",
-  cafe: "☕",
-  pharmacy: "💊",
-  grocery: "🥬",
-  bakery: "🍞",
-  fast_food: "🍔",
-  bar_lounge: "🍸",
-  butchery: "🥩",
-  supermarket: "🛒",
-  other: "📦",
-};
-
-const AREA_COLORS = [
-  "var(--color-primary)",
-  "var(--color-accent)",
-  "var(--color-status-new)",
-  "var(--color-status-contacted)",
-  "var(--color-status-interested)",
-  "var(--color-status-negotiating)",
-  "var(--color-status-signed)",
-  "var(--color-status-rejected)",
-  "#06b6d4",
-  "#84cc16",
-];
-
 export default function AreaBreakdown({
   byArea,
   byCategory,
   isLoading,
 }: AreaBreakdownProps) {
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {[1, 2].map((i) => (
-          <div key={i} className="animate-shimmer rounded-xl h-64" />
-        ))}
-      </div>
-    );
-  }
-
-  const areaEntries = Object.entries(byArea).sort((a, b) => b[1] - a[1]);
-  const catEntries = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
-  const maxArea = areaEntries.length > 0 ? areaEntries[0][1] : 1;
-  const maxCat = catEntries.length > 0 ? catEntries[0][1] : 1;
+  const areas = Object.entries(byArea).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const total = Object.values(byArea).reduce((acc, val) => acc + val, 0);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* By Area */}
-      <section className="glass-card p-6" aria-labelledby="area-breakdown-heading">
-        <h3
-          id="area-breakdown-heading"
-          className="text-sm font-semibold mb-4"
-          style={{ color: "var(--color-text)" }}
-        >
-          Leads by Area
-        </h3>
-        <div className="space-y-3">
-          {areaEntries.length === 0 && (
-            <p className="text-sm" style={{ color: "var(--color-text-tertiary)" }}>
-              No data yet
-            </p>
-          )}
-          {areaEntries.map(([area, count], idx) => (
-            <div key={area}>
-              <div className="flex items-center justify-between mb-1">
-                <span
-                  className="text-sm font-medium"
-                  style={{ color: "var(--color-text-secondary)" }}
-                >
-                  📍 {area}
-                </span>
-                <span
-                  className="text-sm font-bold"
-                  style={{ color: AREA_COLORS[idx % AREA_COLORS.length] }}
-                >
-                  {count}
-                </span>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-premium" style={{ animationDelay: '200ms' }}>
+      <div className="glass-card p-10">
+        <h3 className="text-[10px] font-bold tracking-[0.2em] text-white/30 uppercase mb-10">Area Distribution</h3>
+        
+        {isLoading ? (
+          <div className="space-y-6">
+            {[1, 2, 3].map(i => <div key={i} className="h-4 bg-white/5 rounded-full animate-pulse" />)}
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {areas.length > 0 ? areas.map(([name, count], i) => (
+              <div key={name} className="flex flex-col gap-3">
+                <div className="flex justify-between items-end">
+                   <span className="text-xs font-bold tracking-widest text-white/60 uppercase">{name}</span>
+                   <span className="text-[10px] font-bold text-white/20">{Math.round((count / total) * 100)}%</span>
+                </div>
+                <div className="h-[3px] bg-white/5 rounded-full overflow-hidden">
+                   <div 
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{ 
+                        width: `${(count / total) * 100}%`,
+                        background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
+                        boxShadow: '0 0 10px rgba(0, 160, 130, 0.4)',
+                        transitionDelay: `${i * 100}ms`
+                      }}
+                   />
+                </div>
               </div>
-              <div
-                className="h-2 rounded-full overflow-hidden"
-                style={{ background: "var(--color-bg)" }}
-              >
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${(count / maxArea) * 100}%`,
-                    background: AREA_COLORS[idx % AREA_COLORS.length],
-                    transition: "width var(--transition-slow)",
-                    opacity: 0.7,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            )) : (
+              <p className="text-xs text-white/20 italic">No distribution data calibrated</p>
+            )}
+          </div>
+        )}
+      </div>
 
-      {/* By Category */}
-      <section className="glass-card p-6" aria-labelledby="category-breakdown-heading">
-        <h3
-          id="category-breakdown-heading"
-          className="text-sm font-semibold mb-4"
-          style={{ color: "var(--color-text)" }}
-        >
-          Leads by Category
-        </h3>
-        <div className="space-y-3">
-          {catEntries.length === 0 && (
-            <p className="text-sm" style={{ color: "var(--color-text-tertiary)" }}>
-              No data yet
-            </p>
-          )}
-          {catEntries.map(([cat, count], idx) => (
-            <div key={cat}>
-              <div className="flex items-center justify-between mb-1">
-                <span
-                  className="text-sm font-medium"
-                  style={{ color: "var(--color-text-secondary)" }}
-                >
-                  {CATEGORY_EMOJIS[cat] || "📦"} {cat.replace("_", " ")}
-                </span>
-                <span
-                  className="text-sm font-bold"
-                  style={{ color: AREA_COLORS[idx % AREA_COLORS.length] }}
-                >
-                  {count}
-                </span>
-              </div>
-              <div
-                className="h-2 rounded-full overflow-hidden"
-                style={{ background: "var(--color-bg)" }}
-              >
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${(count / maxCat) * 100}%`,
-                    background: AREA_COLORS[idx % AREA_COLORS.length],
-                    transition: "width var(--transition-slow)",
-                    opacity: 0.7,
-                  }}
-                />
-              </div>
+      <div className="glass-card p-10">
+        <h3 className="text-[10px] font-bold tracking-[0.2em] text-white/30 uppercase mb-10">Category Saturation</h3>
+        <div className="flex flex-wrap gap-3">
+          {Object.entries(byCategory).map(([cat, count]) => (
+            <div 
+              key={cat} 
+              className="px-5 py-3 rounded-2xl bg-white/[0.03] border border-white/5 flex flex-col gap-1 min-w-[120px]"
+            >
+               <span className="text-[9px] font-bold text-white/20 tracking-[0.1em] uppercase">{cat}</span>
+               <span className="text-lg font-light">{count}</span>
             </div>
           ))}
         </div>
-      </section>
+      </div>
     </div>
   );
 }

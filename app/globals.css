@@ -1,292 +1,175 @@
 @import "tailwindcss";
 
-/* =============================================
-   Glovo Sales Agent — Design System
-   8px grid spacing throughout
-   ============================================= */
-
-:root {
-  /* Brand Colors — Glovo-inspired */
-  --color-primary: #00a082;
-  --color-primary-light: #00c9a1;
-  --color-primary-dark: #007a63;
-
-  --color-accent: #ffc244;
-  --color-accent-light: #ffd97a;
-  --color-accent-dark: #e6a830;
-
-  /* Surface & Background */
-  --color-bg: #0b0f14;
-  --color-bg-elevated: #111820;
-  --color-bg-card: #161e28;
-  --color-bg-card-hover: #1c2533;
-  --color-bg-input: #0f1419;
-
-  /* Text */
-  --color-text: #e8ecf1;
-  --color-text-secondary: #8b95a5;
-  --color-text-tertiary: #5a657a;
-  --color-text-inverse: #0b0f14;
-
-  /* Borders */
-  --color-border: #1e2836;
-  --color-border-hover: #2a3648;
-  --color-border-focus: var(--color-primary);
-
-  /* Status Colors */
-  --color-status-new: #3b82f6;
-  --color-status-contacted: #8b5cf6;
-  --color-status-interested: #f59e0b;
-  --color-status-negotiating: #ec4899;
-  --color-status-signed: #10b981;
-  --color-status-rejected: #ef4444;
-  --color-status-churned: #6b7280;
-
-  /* Priority Colors */
-  --color-priority-5: #ef4444;
-  --color-priority-4: #f59e0b;
-  --color-priority-3: #3b82f6;
-  --color-priority-2: #8b95a5;
-  --color-priority-1: #5a657a;
-  --color-priority-0: #374151;
-
-  /* Shadows */
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-glow-primary: 0 0 20px rgba(0, 160, 130, 0.15);
-  --shadow-glow-accent: 0 0 20px rgba(255, 194, 68, 0.12);
-
-  /* Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Spacing (8px grid) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-7: 28px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
-  --space-16: 64px;
-}
-
-@theme inline {
-  --color-background: var(--color-bg);
-  --color-foreground: var(--color-text);
+@theme {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-/* =============================================
-   Global Base
-   ============================================= */
-body {
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-sans, "Inter", system-ui, -apple-system, sans-serif);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+:root {
+  /* Premium Dark Palette */
+  --color-bg: #0a0c10;
+  --color-bg-subtle: #12151c;
+  --color-primary: #00a082; /* Glovo Green */
+  --color-primary-dark: #008068;
+  --color-accent: #ffc244; /* Glovo Yellow */
+  --color-accent-soft: rgba(255, 194, 68, 0.15);
+  
+  /* Text */
+  --color-text: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.7);
+  --color-text-tertiary: rgba(255, 255, 255, 0.45);
+  
+  /* Glassmorphism Tokens */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-bg-hover: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-bright: rgba(255, 255, 255, 0.2);
+  --glass-blur: 24px;
+  
+  /* Status Colors (Glass Style) */
+  --color-status-new: #3b82f6;
+  --color-status-contacted: #8b5cf6;
+  --color-status-interested: #10b981;
+  --color-status-negotiating: #f59e0b;
+  --color-status-signed: #00a082;
+  --color-status-rejected: #ef4444;
+  
+  /* Spacing & Radius */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 32px;
+  --radius-xl: 40px;
+  
+  /* Shadows & Glows */
+  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-glow-primary: 0 0 20px rgba(0, 160, 130, 0.3);
+  --shadow-glow-accent: 0 0 20px rgba(255, 194, 68, 0.2);
+  
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* =============================================
-   Scrollbar Styling
-   ============================================= */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--color-bg);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-hover);
-}
-
-/* =============================================
-   Respecting reduced motion
-   ============================================= */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+@layer base {
+  * {
+    border-color: var(--glass-border);
+    outline-color: var(--color-primary);
+  }
+  
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    background-image: 
+      radial-gradient(circle at 0% 0%, rgba(0, 160, 130, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(255, 194, 68, 0.05) 0%, transparent 50%),
+      url('https://images.unsplash.com/photo-1542601039-29adde826c9f?q=80&w=2560&auto=format&fit=crop'); /* Modern architectural blur */
+    background-attachment: fixed;
+    background-size: cover;
+    background-position: center;
+  }
+  
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 12, 16, 0.85); /* Overlay to keep readability */
+    backdrop-filter: blur(10px);
+    z-index: -1;
   }
 }
 
-/* =============================================
-   Custom Animations
-   ============================================= */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
+@layer components {
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    transition: var(--transition-base);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .glass-card:hover {
+    background: var(--glass-bg-hover);
+    border-color: var(--glass-border-bright);
+    transform: translateY(-2px);
+  }
+
+  .glass-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    padding: 12px 20px;
+    transition: var(--transition-fast);
+  }
+
+  .glass-input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(0, 160, 130, 0.1);
+    outline: none;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.5) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    border-radius: var(--radius-md);
+    padding: 14px 28px;
+    font-weight: 600;
+    box-shadow: var(--shadow-glow-primary);
+    transition: var(--transition-base);
+  }
+
+  .btn-primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 30px rgba(0, 160, 130, 0.5);
+  }
+
+  /* Status Badges - Pill Style */
+  .status-pill {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid transparent;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-tertiary);
   }
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.98) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(0, 160, 130, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 12px 4px rgba(0, 160, 130, 0.15);
-  }
+.animate-premium {
+  animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-
-@keyframes spin-slow {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp var(--transition-slow) ease-out;
-}
-
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--color-bg-card) 25%,
-    var(--color-bg-card-hover) 50%,
-    var(--color-bg-card) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s infinite;
-}
-
-.animate-spin-slow {
-  animation: spin-slow 2s linear infinite;
-}
-
-/* =============================================
-   Utility Classes
-   ============================================= */
-.glass-card {
-  background: linear-gradient(
-    135deg,
-    rgba(22, 30, 40, 0.9),
-    rgba(22, 30, 40, 0.7)
-  );
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  transition: all var(--transition-base);
-}
-
-.glass-card:hover {
-  border-color: var(--color-border-hover);
-  box-shadow: var(--shadow-card-hover);
-}
-
-.gradient-text {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.gradient-border {
-  position: relative;
-}
-
-.gradient-border::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  padding: 1px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/* =============================================
-   Status Badge Colors
-   ============================================= */
-.status-new        { --badge-color: var(--color-status-new); }
-.status-contacted  { --badge-color: var(--color-status-contacted); }
-.status-interested { --badge-color: var(--color-status-interested); }
-.status-negotiating { --badge-color: var(--color-status-negotiating); }
-.status-signed     { --badge-color: var(--color-status-signed); }
-.status-rejected   { --badge-color: var(--color-status-rejected); }
-.status-churned    { --badge-color: var(--color-status-churned); }
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-3);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: capitalize;
-  background: color-mix(in srgb, var(--badge-color) 15%, transparent);
-  color: var(--badge-color);
-  border: 1px solid color-mix(in srgb, var(--badge-color) 25%, transparent);
-}
-
-.status-badge::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--badge-color);
-}
-
-/* =============================================
-   Priority Indicator
-   ============================================= */
-.priority-bar {
-  width: 4px;
-  border-radius: 2px;
-  min-height: 24px;
-}
-
-.priority-5 { background: var(--color-priority-5); }
-.priority-4 { background: var(--color-priority-4); }
-.priority-3 { background: var(--color-priority-3); }
-.priority-2 { background: var(--color-priority-2); }
-.priority-1 { background: var(--color-priority-1); }
-.priority-0 { background: var(--color-priority-0); }

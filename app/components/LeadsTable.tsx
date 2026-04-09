@@ -1,14 +1,27 @@
 "use client";
 
 import { Lead, LeadStatus } from "@/lib/types";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 interface LeadsTableProps {
   leads: Lead[];
   isLoading: boolean;
   onStatusChange?: (id: string, status: LeadStatus) => void;
-  onLeadClick?: (lead: Lead) => void;
+  onUpdateLead?: (id: string, updates: Partial<Lead>) => Promise<void>;
 }
+
+const CATEGORY_MAP: any = {
+  restaurant: "REST",
+  cafe: "CAFE",
+  pharmacy: "PHRM",
+  grocery: "GRCR",
+  bakery: "BKRY",
+  fast_food: "FAST",
+  bar_lounge: "BAR",
+  butchery: "BTCH",
+  supermarket: "SPMR",
+  other: "OTHR",
+};
 
 const STATUS_OPTIONS: LeadStatus[] = [
   "new",
@@ -20,428 +33,231 @@ const STATUS_OPTIONS: LeadStatus[] = [
   "churned",
 ];
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  restaurant: "🍽️",
-  cafe: "☕",
-  pharmacy: "💊",
-  grocery: "🥬",
-  bakery: "🍞",
-  fast_food: "🍔",
-  bar_lounge: "🍸",
-  butchery: "🥩",
-  supermarket: "🛒",
-  other: "📦",
-};
-
-function PriorityStars({ priority }: { priority: number }) {
-  return (
-    <div className="flex gap-0.5" aria-label={`Priority ${priority} of 5`}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <svg
-          key={star}
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill={star <= priority ? "var(--color-accent)" : "none"}
-          stroke={star <= priority ? "var(--color-accent)" : "var(--color-text-tertiary)"}
-          strokeWidth="2"
-        >
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      ))}
-    </div>
-  );
-}
-
-export default function LeadsTable({
-  leads,
-  isLoading,
-  onStatusChange,
-  onLeadClick,
-}: LeadsTableProps) {
+export default function LeadsTable({ leads, isLoading, onStatusChange, onUpdateLead }: LeadsTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editState, setEditState] = useState<{ id: string, field: keyof Lead, value: string } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async (id: string) => {
+    if (!editState || !onUpdateLead) return;
+    setIsSaving(true);
+    try {
+      await onUpdateLead(id, { [editState.field]: editState.value });
+      setEditState(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const renderEditableField = (lead: Lead, field: keyof Lead, label: string) => {
+    const isEditing = editState?.id === lead.id && editState?.field === field;
+    const value = lead[field] as string || "";
+
+    if (isEditing) {
+      return (
+        <div className="flex flex-col gap-2">
+           <p className="text-[9px] font-black text-white/20 tracking-[0.4em] uppercase">{label}</p>
+           <div className="flex gap-2">
+             <input 
+               autoFocus
+               value={editState.value}
+               onChange={(e) => setEditState({ ...editState, value: e.target.value })}
+               className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white/80 outline-none focus:border-emerald-500/30 flex-1"
+             />
+             <button onClick={() => handleSave(lead.id)} className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">SAVE</button>
+             <button onClick={() => setEditState(null)} className="text-[9px] font-bold text-white/20 uppercase tracking-widest">X</button>
+           </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="group/field relative">
+         <p className="text-[9px] font-black text-white/20 tracking-[0.4em] uppercase mb-2">{label}</p>
+         <div className="flex items-center justify-between">
+            <p className="text-sm font-light text-white/60 tracking-tight truncate max-w-[200px]">{value || "NONE RECOGNIZED"}</p>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setEditState({ id: lead.id, field, value }); }}
+              className="text-[8px] font-bold text-white/10 hover:text-emerald-400 uppercase tracking-widest opacity-0 group-hover/field:opacity-100 transition-all cursor-pointer"
+            >
+              EDIT
+            </button>
+         </div>
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
-      <div className="glass-card overflow-hidden">
-        <div className="p-6">
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="animate-shimmer h-16 rounded-lg" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (leads.length === 0) {
-    return (
-      <div className="glass-card p-12 text-center">
-        <div
-          className="flex items-center justify-center w-16 h-16 rounded-2xl mx-auto mb-4"
-          style={{ background: "var(--color-bg-elevated)" }}
-        >
-          <svg
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--color-text-tertiary)"
-            strokeWidth="1.5"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-        </div>
-        <h3
-          className="text-lg font-semibold mb-2"
-          style={{ color: "var(--color-text)" }}
-        >
-          No leads yet
-        </h3>
-        <p className="text-sm" style={{ color: "var(--color-text-tertiary)" }}>
-          Run the Lead Discovery Agent above to start finding businesses
-        </p>
+      <div className="space-y-4">
+        {[1, 2, 3].map(n => (
+          <div key={n} className="glass-card h-20 animate-pulse rounded-[32px]" />
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="glass-card overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr
-              style={{
-                borderBottom: "1px solid var(--color-border)",
-                background: "var(--color-bg-elevated)",
+    <div className="space-y-4 animate-premium" style={{ animationDelay: '600ms' }}>
+      <div className="flex items-center justify-between px-8 mb-4">
+        <h2 className="text-[10px] font-bold tracking-[0.4em] text-white/20 uppercase">Intelligence Grid</h2>
+        <div className="h-[1px] flex-1 mx-10 bg-white/5" />
+        <span className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">{leads.length} Records Loaded</span>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {leads.map((lead, i) => (
+          <Fragment key={lead.id}>
+            <div 
+              onClick={() => {
+                setExpandedId(expandedId === lead.id ? null : lead.id);
+                setEditState(null);
               }}
+              className="glass-card p-6 pr-10 flex items-center justify-between gap-6 cursor-pointer hover:bg-white/[0.04] transition-all group relative overflow-hidden"
+              style={{ animationDelay: `${i * 50}ms`, borderRadius: '32px' }}
             >
-              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--color-text-tertiary)" }}>
-                Business
-              </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style={{ color: "var(--color-text-tertiary)" }}>
-                Area
-              </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style={{ color: "var(--color-text-tertiary)" }}>
-                Rating
-              </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style={{ color: "var(--color-text-tertiary)" }}>
-                Priority
-              </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--color-text-tertiary)" }}>
-                Status
-              </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style={{ color: "var(--color-text-tertiary)" }}>
-                Contact
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {leads.map((lead, index) => (
-              <>
-                <tr
-                  key={lead.id}
-                  className="group cursor-pointer"
-                  onClick={() => {
-                    setExpandedId(expandedId === lead.id ? null : lead.id);
-                    onLeadClick?.(lead);
-                  }}
-                  style={{
-                    borderBottom: "1px solid var(--color-border)",
-                    transition: "var(--transition-fast)",
-                    animationDelay: `${index * 30}ms`,
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = "var(--color-bg-card-hover)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = "transparent";
-                  }}
-                >
-                  {/* Business Name & Category */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`priority-bar priority-${lead.priority} hidden lg:block`}
-                        style={{ alignSelf: "stretch" }}
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span>{CATEGORY_EMOJIS[lead.category] || "📦"}</span>
-                          <span
-                            className="font-semibold text-sm"
-                            style={{ color: "var(--color-text)" }}
-                          >
-                            {lead.business_name}
-                          </span>
-                        </div>
-                        <span
-                          className="text-xs capitalize"
-                          style={{ color: "var(--color-text-tertiary)" }}
-                        >
-                          {lead.category.replace("_", " ")}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
+              <div 
+                className="absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-500" 
+                style={{ 
+                  background: lead.priority >= 4 ? 'var(--color-primary)' : lead.priority >= 3 ? 'var(--color-accent)' : 'rgba(255,255,255,0.1)',
+                  boxShadow: lead.priority >= 4 ? '0 0 20px rgba(0, 160, 130, 0.4)' : 'none'
+                }} 
+              />
 
-                  {/* Area */}
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <span
-                      className="text-sm"
-                      style={{ color: "var(--color-text-secondary)" }}
-                    >
-                      📍 {lead.area || "—"}
-                    </span>
-                  </td>
+              <div className="flex items-center gap-8">
+                 <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/5 text-[10px] font-black text-white/30 tracking-widest group-hover:border-white/20 transition-all">
+                    {CATEGORY_MAP[lead.category] || "MISC"}
+                 </div>
+                 <div>
+                   <p className="text-base font-light tracking-tight mb-1 group-hover:text-emerald-400 transition-colors uppercase">{lead.business_name}</p>
+                   <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-bold text-white/20 tracking-[0.2em] uppercase">{lead.area}</span>
+                      <div className="w-1 h-1 rounded-full bg-white/10" />
+                      <span className="text-[10px] font-bold text-emerald-400/40 tracking-[0.2em] uppercase">{lead.category}</span>
+                   </div>
+                 </div>
+              </div>
 
-                  {/* Rating */}
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    {lead.google_rating ? (
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="text-sm font-semibold"
-                          style={{ color: "var(--color-accent)" }}
-                        >
-                          ⭐ {lead.google_rating}
-                        </span>
-                        {lead.google_reviews && (
-                          <span
-                            className="text-xs"
-                            style={{ color: "var(--color-text-tertiary)" }}
-                          >
-                            ({lead.google_reviews})
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span style={{ color: "var(--color-text-tertiary)" }}>
-                        —
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Priority */}
-                  <td className="px-4 py-3 hidden lg:table-cell">
-                    <PriorityStars priority={lead.priority} />
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-4 py-3">
-                    <select
-                      id={`status-select-${lead.id}`}
-                      value={lead.status}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        onStatusChange?.(
-                          lead.id,
-                          e.target.value as LeadStatus
-                        );
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className={`status-badge status-${lead.status} cursor-pointer border-0 text-xs font-semibold`}
-                      style={{
-                        appearance: "none",
-                        WebkitAppearance: "none",
-                        paddingRight: "var(--space-4)",
-                      }}
-                    >
-                      {STATUS_OPTIONS.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
+              <div className="flex items-center gap-16">
+                <div className="hidden lg:flex flex-col items-end">
+                   <span className="text-[9px] font-black text-white/10 tracking-[0.3em] uppercase mb-1.5">Priority</span>
+                   <div className="flex gap-1">
+                      {[1,2,3,4,5].map(star => (
+                         <div 
+                            key={star} 
+                            className={`w-1.5 h-1.5 rounded-full ${star <= lead.priority ? 'bg-emerald-400' : 'bg-white/5'}`} 
+                            style={{ boxShadow: star <= lead.priority ? '0 0 8px rgba(16,185,129,0.5)' : 'none' }}
+                         />
                       ))}
-                    </select>
-                  </td>
+                   </div>
+                </div>
 
-                  {/* Contact */}
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <div className="flex items-center gap-2">
-                      {lead.phone && (
-                        <a
-                          href={`tel:${lead.phone}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex items-center justify-center w-7 h-7 rounded-lg"
-                          style={{
-                            background: "var(--color-bg-elevated)",
-                            color: "var(--color-status-signed)",
-                            transition: "var(--transition-fast)",
-                          }}
-                          title={lead.phone}
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.11 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-                          </svg>
-                        </a>
-                      )}
-                      {lead.instagram && (
-                        <a
-                          href={`https://instagram.com/${lead.instagram}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex items-center justify-center w-7 h-7 rounded-lg"
-                          style={{
-                            background: "var(--color-bg-elevated)",
-                            color: "var(--color-status-negotiating)",
-                            transition: "var(--transition-fast)",
-                          }}
-                          title={`@${lead.instagram}`}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-                          </svg>
-                        </a>
-                      )}
-                      {lead.google_maps_url && (
-                        <a
-                          href={lead.google_maps_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex items-center justify-center w-7 h-7 rounded-lg"
-                          style={{
-                            background: "var(--color-bg-elevated)",
-                            color: "var(--color-status-new)",
-                            transition: "var(--transition-fast)",
-                          }}
-                          title="Google Maps"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          >
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                            <circle cx="12" cy="10" r="3" />
-                          </svg>
-                        </a>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-
-                {/* Expanded Detail Row */}
-                {expandedId === lead.id && (
-                  <tr
-                    key={`${lead.id}-detail`}
-                    style={{
-                      borderBottom: "1px solid var(--color-border)",
-                      background: "var(--color-bg-elevated)",
-                    }}
+                <div className="flex flex-col items-end min-w-[170px]" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-[9px] font-black text-white/10 tracking-[0.3em] uppercase mb-2">Cycle Status</span>
+                  <select
+                    value={lead.status}
+                    onChange={(e) => onStatusChange?.(lead.id, e.target.value as LeadStatus)}
+                    className={`status-pill status-${lead.status} bg-white/5 border border-white/5 text-[10px] font-bold tracking-widest outline-none cursor-pointer hover:border-white/20 transition-all appearance-none text-center min-w-[120px] py-1.5`}
+                    style={{ WebkitAppearance: 'none' }}
                   >
-                    <td colSpan={6} className="px-4 py-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in-up">
-                        {/* Contact Info */}
-                        <div>
-                          <h4
-                            className="text-xs font-semibold uppercase tracking-wider mb-2"
-                            style={{ color: "var(--color-text-tertiary)" }}
-                          >
-                            Contact Info
-                          </h4>
-                          <div className="space-y-1.5">
-                            {lead.phone && (
-                              <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                                📞 {lead.phone}
-                              </p>
-                            )}
-                            {lead.email && (
-                              <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                                ✉️ {lead.email}
-                              </p>
-                            )}
-                            {lead.website && (
-                              <a
-                                href={lead.website}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm block"
-                                style={{ color: "var(--color-primary)" }}
-                              >
-                                🌐 {lead.website}
-                              </a>
-                            )}
-                            {lead.address && (
-                              <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                                📍 {lead.address}
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                    {STATUS_OPTIONS.map(opt => (
+                      <option key={opt} value={opt} className="bg-slate-900">{opt.toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
 
-                        {/* Business Signals */}
-                        <div>
-                          <h4
-                            className="text-xs font-semibold uppercase tracking-wider mb-2"
-                            style={{ color: "var(--color-text-tertiary)" }}
-                          >
-                            Business Signals
-                          </h4>
-                          <div className="space-y-1.5">
-                            <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                              Delivery: {lead.has_delivery ? "✅ Yes" : "❌ No"}
-                            </p>
-                            <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                              On Glovo: {lead.on_glovo ? "✅ Yes" : "❌ No"}
-                            </p>
-                            {lead.on_other_apps && lead.on_other_apps.length > 0 && (
-                              <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                                Other Apps: {lead.on_other_apps.join(", ")}
-                              </p>
-                            )}
-                            {lead.follower_count && (
-                              <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                                Followers: {lead.follower_count.toLocaleString()}
-                              </p>
-                            )}
-                            {lead.operating_hours && (
-                              <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                                Hours: {lead.operating_hours}
-                              </p>
-                            )}
-                          </div>
-                        </div>
+            {expandedId === lead.id && (
+              <div className="px-6 -mt-3 mb-6 animate-premium origin-top">
+                <div className="glass-card p-12 bg-white/[0.02] border-t-0 rounded-t-none" style={{ borderBottomLeftRadius: '40px', borderBottomRightRadius: '40px' }}>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
+                     {/* Contact Intelligence */}
+                     <div className="space-y-8">
+                        {renderEditableField(lead, "phone", "Direct Line")}
+                        {renderEditableField(lead, "website", "Digital Platform")}
+                        {renderEditableField(lead, "address", "Physical Vector")}
+                     </div>
 
-                        {/* Notes */}
+                     {/* Partner Signals */}
+                     <div className="space-y-8 border-l border-white/5 pl-16">
                         <div>
-                          <h4
-                            className="text-xs font-semibold uppercase tracking-wider mb-2"
-                            style={{ color: "var(--color-text-tertiary)" }}
-                          >
-                            Notes
-                          </h4>
-                          <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                            {lead.notes || "No notes"}
-                          </p>
-                          <p
-                            className="text-xs mt-2"
-                            style={{ color: "var(--color-text-tertiary)" }}
-                          >
-                            Source: {lead.source?.replace("_", " ")} · Added{" "}
-                            {new Date(lead.created_at).toLocaleDateString()}
-                          </p>
+                           <p className="text-[9px] font-black text-white/20 tracking-[0.4em] uppercase mb-6">Partner Analysis</p>
+                           <div className="grid grid-cols-1 gap-4">
+                              <div className="bg-white/[0.03] p-5 rounded-3xl border border-white/5 flex justify-between items-center group/toggle cursor-pointer" 
+                                   onClick={() => onUpdateLead?.(lead.id, { on_glovo: !lead.on_glovo })}>
+                                 <div>
+                                   <p className="text-[9px] font-bold text-white/20 mb-1 uppercase tracking-widest">Glovo Presence</p>
+                                   <p className="text-xs font-medium text-white/80">{lead.on_glovo ? "ACTIVE PARTNER" : "INDEPENDENT"}</p>
+                                 </div>
+                                 <div className={`w-8 h-4 rounded-full transition-all ${lead.on_glovo ? 'bg-emerald-500' : 'bg-white/10'}`} />
+                              </div>
+                              <div className="bg-white/[0.03] p-5 rounded-3xl border border-white/5 flex justify-between items-center group/toggle cursor-pointer"
+                                   onClick={() => onUpdateLead?.(lead.id, { has_delivery: !lead.has_delivery })}>
+                                 <div>
+                                   <p className="text-[9px] font-bold text-white/20 mb-1 uppercase tracking-widest">Logistics</p>
+                                   <p className="text-xs font-medium text-white/80">{lead.has_delivery ? "ESTABLISHED" : "NONE"}</p>
+                                 </div>
+                                 <div className={`w-8 h-4 rounded-full transition-all ${lead.has_delivery ? 'bg-emerald-500' : 'bg-white/10'}`} />
+                              </div>
+                           </div>
                         </div>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </>
-            ))}
-          </tbody>
-        </table>
+                     </div>
+
+                     {/* Strategic Notes */}
+                     <div className="space-y-8 border-l border-white/5 pl-16">
+                        <div className="h-full flex flex-col">
+                           <div className="flex justify-between items-center mb-6">
+                              <p className="text-[9px] font-black text-white/20 tracking-[0.4em] uppercase">Intelligence Report</p>
+                              {editState?.field === 'notes' ? (
+                                <div className="flex gap-4">
+                                   <button 
+                                      onClick={() => handleSave(lead.id)} 
+                                      disabled={isSaving}
+                                      className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest hover:text-white transition-colors cursor-pointer"
+                                   >
+                                      {isSaving ? "SYNCING..." : "COMMIT"}
+                                   </button>
+                                   <button 
+                                      onClick={() => setEditState(null)} 
+                                      className="text-[9px] font-bold text-white/30 uppercase tracking-widest hover:text-white transition-colors cursor-pointer"
+                                   >
+                                      ABORT
+                                   </button>
+                                </div>
+                              ) : (
+                                <button 
+                                   onClick={(e) => { e.stopPropagation(); setEditState({ id: lead.id, field: 'notes', value: lead.notes || "" }); }}
+                                   className="text-[9px] font-bold text-white/40 uppercase tracking-widest hover:text-emerald-400 transition-colors cursor-pointer"
+                                >
+                                   EDIT
+                                </button>
+                              )}
+                           </div>
+                           
+                           {editState?.field === 'notes' ? (
+                             <textarea 
+                                autoFocus
+                                value={editState.value}
+                                onChange={(e) => setEditState({ ...editState, field: 'notes', value: e.target.value })}
+                                className="flex-1 w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs text-white/80 outline-none focus:border-emerald-500/30 transition-all resize-none min-h-[120px]"
+                                placeholder="Enter market observations..."
+                             />
+                           ) : (
+                             <p className="text-xs text-white/40 leading-relaxed italic pr-4">
+                               {lead.notes || "Awaiting intelligence reports."}
+                             </p>
+                           )}
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Fragment>
+        ))}
       </div>
     </div>
   );

@@ -1,23 +1,23 @@
-import Groq from "groq-sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
   LEAD_GENERATION_SYSTEM_PROMPT,
   buildSearchPrompt,
 } from "./gemini-prompt";
 
-// Lazy-initialize the Groq client
-let _groq: Groq | null = null;
+// Lazy-initialize the Gemini client
+let _genAI: GoogleGenerativeAI | null = null;
 
-function getGroqClient(): Groq {
-  if (!_groq) {
-    const apiKey = process.env.GROQ_API_KEY;
+function getGenAI(): GoogleGenerativeAI {
+  if (!_genAI) {
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error(
-        "GROQ_API_KEY is not configured. Add it to .env.local"
+        "GEMINI_API_KEY is not configured. Add it to .env.local"
       );
     }
-    _groq = new Groq({ apiKey });
+    _genAI = new GoogleGenerativeAI(apiKey);
   }
-  return _groq;
+  return _genAI;
 }
 
 export interface AgentSearchParams {
@@ -37,44 +37,36 @@ export interface AgentSearchResult {
 }
 
 /**
- * Runs the lead-generation agent using Groq (Llama 3.3 70B).
- *
- * The prompt is designed to maximize accuracy by:
- * - Only asking for business names the model is confident about
- * - Requiring null for unverified contact details
- * - Adding confidence levels and verification flags
+ * Runs the lead-generation agent using Google Gemini 1.5 Flash.
  */
 export async function runLeadAgent(
   params: AgentSearchParams
 ): Promise<AgentSearchResult> {
-  const groq = getGroqClient();
-  const userPrompt = buildSearchPrompt(params.area, params.category);
-
-  const response = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
-    messages: [
-      { role: "system", content: LEAD_GENERATION_SYSTEM_PROMPT },
-      { role: "user", content: userPrompt },
-    ],
-    temperature: 0.3, // Low temp = more factual, less creative
-    top_p: 0.85,
-    max_tokens: 8192,
-    response_format: { type: "json_object" },
+  const genAI = getGenAI();
+  const model = genAI.getGenerativeModel({ 
+    model: "gemini-3.1-flash-lite-preview",
+    generationConfig: { responseMimeType: "application/json" }
   });
 
-  const text = response.choices[0]?.message?.content ?? "";
+  const userPrompt = buildSearchPrompt(params.area, params.category);
+
+  // Gemini handles system instruction via a separate field in some versions, 
+  // but standard chat structure works well for basic extraction.
+  const result = await model.generateContent([
+    LEAD_GENERATION_SYSTEM_PROMPT,
+    userPrompt
+  ]);
+
+  const response = await result.response;
+  const text = response.text();
 
   // Parse JSON from response
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(text);
-  } catch {
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      parsed = JSON.parse(jsonMatch[1].trim());
-    } else {
-      throw new Error("Failed to parse Groq response as JSON");
-    }
+  } catch (err) {
+    console.error("JSON Parse Error:", text);
+    throw new Error("Failed to parse Gemini response as JSON");
   }
 
   const leads = (parsed.leads || []) as Record<string, unknown>[];
@@ -86,10 +78,10 @@ export async function runLeadAgent(
       area_searched: params.area,
       category_searched: params.category,
       total_found: leads.length,
-      search_notes: (metadata.search_notes as string) || "AI-generated lead list",
+      search_notes: (metadata.search_notes as string) || "Market intelligence generated via Gemini 1.5 Flash",
       data_quality_note:
         (metadata.data_quality_note as string) ||
-        "Business names are high-confidence. Contact details should be verified via Google Maps or direct visits.",
+        "Business intelligence retrieved via Google Gemini. Always verify contact details before outreach.",
     },
   };
 }
